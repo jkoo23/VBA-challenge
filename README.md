@@ -2,6 +2,7 @@
 I received plenty of help from TAs and tutors.
 
 Here are the paths to the screenshots:
+
 VBA-challenge/2018.png
 
 VBA-challenge/2019.png
