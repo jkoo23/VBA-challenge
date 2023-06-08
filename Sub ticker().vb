@@ -29,7 +29,7 @@ Dim LastRow As Double
 Dim ws As Worksheet
 
 'var for greatest % increase/decrease and greatest total volume
-Dim greatest, lowest As Double
+Dim greatest, lowest, gtv As Double
 
 'loop through all data
 For Each ws In Worksheets
@@ -43,97 +43,113 @@ ws.Cells(1, 12).Value = "total stock volume"
 ws.Cells(1, 17).Value = "value"
 
 'last row
-LastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row + 1
+LastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row
 
 'change width of columns
 ws.Columns("I:L").ColumnWidth = 17
 ws.Columns("O").ColumnWidth = 20
-ws.Columns("Q").ColumnWidth = 15
+ws.Columns("Q").ColumnWidth = 10
 
 strow = 2
 'set opening price
-        oprice = ws.Cells(2, 3).Value
+    oprice = ws.Cells(2, 3).Value
+'set greatest and lowest to something that will get overwritten
+greatest = -10 * 1000000
+lowest = 10 * 1000000
+'same with gtv
+gtv = -10 * 1000000
         
 For i = 2 To LastRow
 
 'check to see same ticker
-    If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
+If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
 
 'set ticker name
-        ticker_name = ws.Cells(i, 1).Value
+    ticker_name = ws.Cells(i, 1).Value
+        
 'add total
-        total_vol = total_vol + ws.Cells(i, 7).Value
+    total_vol = total_vol + ws.Cells(i, 7).Value
+        
 'print ticker name
-        ws.Range("I" & strow).Value = ticker_name
+    ws.Range("I" & strow).Value = ticker_name
+        
 'print total
-        ws.Range("L" & strow).Value = total_vol
+    ws.Range("L" & strow).Value = total_vol
+        
 'new close
-        cprice = ws.Cells(i, 6).Value
+    cprice = ws.Cells(i, 6).Value
+        
 'print yearly change
-        year_change = cprice - oprice
-        ws.Range("J" & strow).Value = year_change
-
+    year_change = cprice - oprice
+    ws.Range("J" & strow).Value = year_change
+        
+'change color of cell based on +/-
+        If year_change > 0 Then
+            ws.Range("J" & strow).Interior.ColorIndex = 4
+        ElseIf year_change < 0 Then
+            ws.Range("J" & strow).Interior.ColorIndex = 3
+        Else
+            ws.Range("J" & strow).Interior.ColorIndex = 0
+        End If
 'print percent change
-        per_change = CDbl(Format(year_change / oprice * 100, "0.00"))
-        ws.Range("K" & strow).Value = per_change
+    per_change = year_change / oprice
+    
+'per_change = Format("0.00%")
+
+    ws.Range("K" & strow).Value = per_change
+        
+        If ws.Range("K" & strow).Value > greatest Then
+            greatest = ws.Cells(strow, 11).Value
+        ElseIf ws.Range("K" & strow).Value < lowest Then
+            lowest = ws.Cells(strow, 11).Value
+        End If
+    
+'gtv
+        If total_vol > gtv Then
+            gtv = total_vol
+            
+        End If
+        
 'new open
-        oprice = ws.Cells(i + 1, 3).Value
+    oprice = ws.Cells(i + 1, 3).Value
+    
 'add one to sumtablerow
-        strow = strow + 1
+    strow = strow + 1
+        
 'reset total
-        total_vol = 0
+    total_vol = 0
+    
 'if same brand, just add to total
-    Else
+ElseIf ws.Cells(i + 1, 1).Value = ws.Cells(i, 1).Value Then
         total_vol = total_vol + ws.Cells(i, 7).Value
         
-    End If
+End If
     
 'finish out
 Next i
 
-'change color of cell based on +/-
-For i = 2 To LastRow
-    If ws.Cells(i, 10).Value > 0 Then
-        ws.Cells(i, 10).Interior.ColorIndex = 4
-    ElseIf ws.Cells(i, 10).Value < 0 Then
-        ws.Cells(i, 10).Interior.ColorIndex = 3
-    Else
-        ws.Cells(i, 10).Interior.ColorIndex = 0
-End If
-Next i
+'correct format
+'ws.Range("K2:K" & LastRow).NumberFormat = "0.00%"
 
 'new table
 ws.Cells(2, 15).Value = "Greatest % increase"
 ws.Cells(3, 15).Value = "Greatest % decrease"
 ws.Cells(4, 15).Value = "Greatest Total volume"
 
-'loop to find greatest,lowest
-greatest = ws.Cells(2, 11).Value
-lowest = ws.Cells(2, 11).Value
-   
-For i = 3 To LastRow
-    If ws.Cells(i, 11).Value > greatest Then
-        greatest = ws.Cells(i, 11).Value
-    ElseIf ws.Cells(i, 11).Value < lowest Then
-        lowest = ws.Cells(i, 11).Value
-    End If
-Next i
-
 'print greatest,lowest
 ws.Cells(2, 17).Value = greatest
 ws.Cells(3, 17).Value = lowest
+ws.Cells(4, 17).Value = gtv
 
 'did not know how else to do this part, tried v/hlookup and tooltip lead me to xlookup
 ws.Cells(2, 16).Value = WorksheetFunction.XLookup(ws.Cells(2, 17).Value, ws.Range("K2:K" & LastRow).Value, ws.Range("I2:I" & LastRow).Value)
 ws.Cells(3, 16).Value = WorksheetFunction.XLookup(ws.Cells(3, 17).Value, ws.Range("K2:K" & LastRow).Value, ws.Range("I2:I" & LastRow).Value)
+ws.Cells(4, 16).Value = WorksheetFunction.XLookup(ws.Cells(4, 17).Value, ws.Range("L2:L" & LastRow).Value, ws.Range("I2:I" & LastRow).Value)
 
-
-
-
+'add % sign
+ws.Cells(2, 17).Value = greatest * 100 & "%"
+ws.Cells(3, 17).Value = lowest * 100 & "%"
 
 Next ws
 
 End Sub
-
-
-
